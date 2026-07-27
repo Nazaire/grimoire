@@ -1,4 +1,4 @@
-# grimoire
+![grimoire — musings on engineering](./assets/banner.jpg)
 
 > Musings on engineering — the patterns I've kept, the ones I've abandoned, and why.
 
