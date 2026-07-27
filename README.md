@@ -1,0 +1,18 @@
+# grimoire
+
+> Musings on engineering — the patterns I've kept, the ones I've abandoned, and why.
+
+New here? See [`STRUCTURE.md`](./STRUCTURE.md) for how this is organized and
+what the statuses mean. Start a new entry from [`TEMPLATE.md`](./TEMPLATE.md).
+
+## Index
+
+| Domain | Topics |
+| --- | --- |
+| _(nothing yet — add your first domain)_ | |
+
+<!--
+Add a row per domain as you go, e.g.:
+| [testing](./testing) | mocking, fixtures, snapshots |
+| [git](./git) | rebasing, bisect |
+-->
