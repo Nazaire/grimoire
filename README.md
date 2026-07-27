@@ -1,7 +1,5 @@
 ![grimoire — musings on engineering](./assets/banner.jpg)
 
-> Musings on engineering — the patterns I've kept, the ones I've abandoned, and why.
-
 New here? See [`STRUCTURE.md`](./STRUCTURE.md) for how this is organized and
 what the statuses mean. Start a new domain from
 [`DOMAIN_TEMPLATE.md`](./DOMAIN_TEMPLATE.md), or a new topic from
