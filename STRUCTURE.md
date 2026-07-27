@@ -13,7 +13,8 @@ example.
 grimoire/
 ├── README.md                    # index → links to each {domain}
 ├── STRUCTURE.md                 # this file
-├── TEMPLATE.md                  # starting point for a new {topic}
+├── DOMAIN_TEMPLATE.md           # starting point for a new {domain} README
+├── TOPIC_TEMPLATE.md            # starting point for a new {topic} README
 └── {domain}/
     ├── README.md                # index → links to each {topic} in this domain
     └── {topic}/
