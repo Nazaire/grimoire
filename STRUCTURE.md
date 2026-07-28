@@ -6,8 +6,8 @@ How this grimoire is organized, and what the statuses mean.
 
 Two levels of nesting. Each `{domain}` is a folder at the root — a broad area
 (`testing`, `git`, `architecture`…). Inside it, each `{topic}` is a theme worth
-musing on (`errors`, `rebasing`, `mocking`…). `{artifact}` is a single runnable
-example.
+musing on (`errors`, `rebasing`, `mocking`…). `{artifact}` is a code file that
+demonstrates the pattern — a source file, a worked example, or a snippet.
 
 ```
 grimoire/
