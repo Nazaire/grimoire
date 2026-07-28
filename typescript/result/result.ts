@@ -6,6 +6,8 @@
 import { CodedError } from '../coded-error/coded-error';
 
 export type Result<T, E = Error> = { success: true; data: T } | { success: false; error: E };
+export type Success<R extends Result<any, any>> = R extends { success: true; data: infer T } ? T : never;
+export type Failure<R extends Result<any, any>> = R extends { success: false; error: infer E } ? E : never;
 
 /**
  * Creates a success result
@@ -33,9 +35,6 @@ export async function resultify<T>(promise: Promise<T>): Promise<Result<T, Error
   }
 }
 
-/**
- * Wraps a function that might throw into a Result
- */
 export async function tryCatch<T>(fn: () => T | PromiseLike<T>): Promise<Result<T, Error>> {
   try {
     return success(await fn());
@@ -45,11 +44,17 @@ export async function tryCatch<T>(fn: () => T | PromiseLike<T>): Promise<Result<
 }
 
 /**
- * Flattens a nested result
+ * Unwrap one nested Result layer: `Result<Result<T, E>, F>` → `Result<T, E | F>`.
+ *
+ * Inner may be a union of Results (typical when a callback returns mixed
+ * `failureCode('a') | failureCode('b') | success(data)`). {@link Success} /
+ * {@link Failure} distribute over that union so the output is a single Result.
  */
-export function flatten<T, E, F>(result: Result<Result<T, E>, F>): Result<T, E | F> {
+export function flatten<Inner extends Result<any, any>, F>(
+  result: Result<Inner, F>,
+): Result<Success<Inner>, Failure<Inner> | F> {
   if (!result.success) return result;
-  return result.data;
+  return result.data as Result<Success<Inner>, Failure<Inner> | F>;
 }
 
 /**
@@ -91,12 +96,6 @@ export function unwrapOr<T, E>(result: Result<T, E>, defaultValue: T): T {
   }
   return defaultValue;
 }
-
-/**
- * Extracts the error type from a result
- */
-export type Failure<R extends Result<any, any>> = R extends Result<any, infer E> ? E : never;
-export type Success<R extends Result<any, any>> = R extends Result<infer T, any> ? T : never;
 
 /** `failure(new CodedError(...))` with stack starting at the call site. */
 export function failureCode<const C extends string>(code: C, message?: string): Result<never, CodedError<C>> {
