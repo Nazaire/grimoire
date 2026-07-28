@@ -17,7 +17,7 @@ import {
   assertFailureCode,
   type Result,
 } from '../result/result';
-import { CodedError } from './coded-error';
+import { CodedError, isCodedError } from './coded-error';
 
 declare const orders: {
   reserve(
@@ -27,6 +27,9 @@ declare const orders: {
   >;
 };
 declare const db: { $transaction<T>(fn: () => Promise<T>): Promise<T> };
+declare class DbError extends Error {}
+// A mixed error: coded domain outcomes OR a raw infra error.
+declare function charge(): Promise<Result<{ id: string }, CodedError<'declined'> | CodedError<'expired'> | DbError>>;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PRODUCING: bad input to *this* API is a Result code, never a throw.
@@ -64,9 +67,9 @@ export async function placeOrder(orderId: string) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// BOUNDARY (catch / resultify): `instanceof CodedError` widens to CodedError<string>.
-// Exhaustiveness is impossible, so close with `default: throw` — an unnamed code
-// becomes a thrown programmer error. This is NOT assertNever (type never narrows to never).
+// OPEN BOUNDARY (catch / resultify): the error is typed `Error`, so there are no
+// static codes. `isCodedError` has nothing to preserve — it falls back to open
+// `CodedError`, so close with `default: throw`, NOT assertNever.
 // ─────────────────────────────────────────────────────────────────────────────
 export async function transfer() {
   const result = await resultify(
@@ -77,17 +80,41 @@ export async function transfer() {
   );
 
   if (!result.success) {
-    if (result.error instanceof CodedError) {
+    if (isCodedError(result.error)) {
       switch (result.error.code) {
         case 'insufficient_balance':
           // Pass through same instance, correctly typed — no `as` cast, no re-wrap.
           assertFailureCode(result, 'insufficient_balance');
           return result;
         default:
-          throw result.error; // CodedError<string> here — cannot be exhaustive
+          throw result.error; // open codes here — cannot be exhaustive
       }
     }
     throw result.error; // non-coded throw = a bug in this layer
+  }
+  return success(result.data);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// KNOWN MIXED UNION: `isCodedError` keeps the coded members' codes (bare
+// `instanceof` would widen them to CodedError<string>), so the switch stays
+// exhaustive and non-coded errors fall out to be rethrown.
+// ─────────────────────────────────────────────────────────────────────────────
+export async function settlePayment() {
+  const result = await charge();
+  if (!result.success) {
+    if (isCodedError(result.error)) {
+      // narrowed to CodedError<'declined'> | CodedError<'expired'> — DbError dropped
+      switch (result.error.code) {
+        case 'declined':
+          return failure(result.error);
+        case 'expired':
+          return failure(result.error);
+        default:
+          return assertNever(result.error); // still exhaustive over the coded members
+      }
+    }
+    throw result.error; // the non-coded DbError — infra failure, not our contract
   }
   return success(result.data);
 }

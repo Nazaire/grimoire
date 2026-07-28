@@ -23,7 +23,8 @@ type is inferred (see _don't extract absorb helpers_).
 ## Artifacts
 
 - [`coded-error.ts`](./coded-error.ts) — the `CodedError<C>` class,
-  `CodedError.fromCause`, `assertErrorCode`, and `CodedUnion`.
+  `CodedError.fromCause`, `assertErrorCode`, the `isCodedError` guard, and
+  `CodedUnion`.
 - [`absorbing-failures.ts`](./absorbing-failures.ts) — producing, consuming a
   typed union, a `resultify` boundary, and the two ways a `switch` swallows.
 
@@ -111,20 +112,36 @@ been a code.
 
 ### Closing the switch: `assertNever` vs `default: throw`
 
-Pick by whether the union is **known**:
+Pick by whether the code union is **statically known**:
 
-- **Known union** (a typed `Result`'s error type) → `default: assertNever(error)`.
-  A new upstream code becomes a compile error — the point of single-code errors.
-- **`CodedError<string>`** (from `instanceof CodedError` at a `catch` /
-  `resultify` boundary) → `default: throw error`. Exhaustiveness is impossible.
+- **Known union** (a typed `Result`'s error type, or one that survives
+  `isCodedError`) → `default: assertNever(error)`. A new code becomes a compile
+  error — the point of single-code errors.
+- **Open** (`Error` / `unknown`, e.g. a raw `resultify` catch) → `default: throw
+  error`. There are no static codes to be exhaustive over.
 
 ```ts
 default: assertNever(result.error); // known union — new code = compile error
-default: throw result.error;        // CodedError<string> — new code = runtime throw
+default: throw result.error;        // open codes — new code = runtime throw
 ```
 
-Boundaries don't protect you the way closed unions do: a new code fails the build
-for a known union, but only throws at runtime past a boundary.
+At a boundary, reach for `isCodedError`, **not** bare `instanceof CodedError`.
+Bare `instanceof` widens the union to `CodedError<string>` and forces the throw
+form; `isCodedError` keeps the specific codes when they're statically present, so
+a known union stays exhaustive:
+
+```ts
+if (isCodedError(result.error)) {   // keeps CodedError<'a'> | CodedError<'b'>
+  switch (result.error.code) {
+    case 'a': /* … */ break;
+    case 'b': /* … */ break;
+    default: assertNever(result.error); // still exhaustive
+  }
+}
+```
+
+When the value is only typed as `Error` / `unknown`, `isCodedError` has nothing to
+preserve — it falls back to open `CodedError`, and you close with `default: throw`.
 
 ### Don't extract named absorb helpers
 

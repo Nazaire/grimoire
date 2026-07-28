@@ -24,6 +24,11 @@ export class CodedError<out C extends string = string> extends Error {
     return wrapped;
   }
 
+  /**
+   * Narrow a {@link CodedError} to `CodedError<C>` after `switch (error.code)`.
+   * Prefer {@link isCodedError} when the value is still a union of specific codes —
+   * bare `instanceof CodedError` widens to `CodedError<string>` and kills exhaustiveness.
+   */
   static assertErrorCode<const C extends string>(error: CodedError, code: C): asserts error is CodedError<C> {
     if (error.code !== code) throw error;
   }
@@ -40,6 +45,22 @@ export class CodedError<out C extends string = string> extends Error {
     };
   }
 }
+
+/**
+ * `instanceof CodedError` that keeps members of a known error union.
+ * Bare `instanceof` widens to `CodedError<string>` / `CodedError<any>` and kills exhaustiveness.
+ *
+ * When the value is only typed as `Error` / `unknown` (e.g. `resultify` catch), there is nothing
+ * to extract — falls back to `CodedError` (open codes; close with `default: throw`).
+ */
+export function isCodedError<E>(error: E): error is NarrowCodedError<E> {
+  return error instanceof CodedError;
+}
+
+type NarrowCodedError<E> = [Extract<E, CodedError<string>>] extends [never]
+  ? E & CodedError
+  : Extract<E, CodedError<string>>;
+
 
 function toErrorCause(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error), { cause: error });
