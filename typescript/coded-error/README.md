@@ -23,8 +23,8 @@ type is inferred (see _don't extract absorb helpers_).
 ## Artifacts
 
 - [`coded-error.ts`](./coded-error.ts) — the `CodedError<C>` class,
-  `CodedError.fromCause`, `assertErrorCode`, the `isCodedError` guard, and
-  `CodedUnion`.
+  `CodedError.fromCause`, `extra`, `assertErrorCode`, the `isCodedError` guard,
+  and `CodedUnion`.
 - [`absorbing-failures.ts`](./absorbing-failures.ts) — producing, consuming a
   typed union, a `resultify` boundary, and the two ways a `switch` swallows.
 
@@ -41,9 +41,10 @@ const code: string = 'not_found';
 new CodedError(code);          // ✗ CodedError<string> — won't narrow
 ```
 
-Producers: `failureCode(code, message?)` (fresh), `failureFromCause(code, error)`
-(wrap an upstream error), `CodedError.fromCause(code, error)` (the error instance
-itself — to log or capture before returning).
+Producers: `failureCode(code, message?)` (fresh), `failureCode(code, { cause })`
+(remap wrapping an upstream error), `CodedError.fromCause(code, error)` (the
+error instance itself — to log or capture before returning). Optional `extra`
+rides alongside `cause` and is merged from a `CodedError` cause.
 
 ## Error handling guidance
 
@@ -53,20 +54,21 @@ Every failure takes exactly one — anything else is _swallowing_:
 
 - **pass through** — same instance, unchanged (`failure(error)`, or
   `return result` after `assertFailureCode`).
-- **remap** — a new code you own, keeping the cause (`failureFromCause`).
+- **remap** — a new code you own, keeping the cause (`failureCode(code, { cause })`).
 - **throw** — a bug in this layer; it must not appear on your `Result`.
 
 ```ts
-return failure(error);                           // pass through
-return failureFromCause('order_failed', error);  // remap — keeps cause
-throw error;                                     // throw
+return failure(error);                                 // pass through
+return failureCode('order_failed', { cause: error });  // remap — keeps cause
+throw error;                                           // throw
 ```
 
-Remap with `failureFromCause`, never `failureCode(code, err.toString())` — the
-latter drops the cause chain:
+Remap with `{ cause }`, never `failureCode(code, err.toString())` — the latter
+drops the cause chain. Message is optional API copy and defaults to the **new
+code**, not `cause.message`; callers switch on `code` only. Facts go in `extra`.
 
 ```ts
-return failureFromCause('order_failed', error);        // error survives as .cause
+return failureCode('order_failed', { cause: error });  // error survives as .cause
 return failureCode('order_failed', error.toString());  // ✗ cause lost
 ```
 
@@ -115,14 +117,25 @@ been a code.
 Pick by whether the code union is **statically known**:
 
 - **Known union** (a typed `Result`'s error type, or one that survives
-  `isCodedError`) → `default: assertNever(error)`. A new code becomes a compile
-  error — the point of single-code errors.
+  `isCodedError`) → `default: assertNever(result.error.code)`. A new code becomes
+  a compile error — the point of single-code errors.
 - **Open** (`Error` / `unknown`, e.g. a raw `resultify` catch) → `default: throw
   error`. There are no static codes to be exhaustive over.
 
+Assert the **code**, not the error object. After `case 'not_found':`, a one-code
+`result.error` is still `CodedError<'not_found'>` — `assertNever(result.error)`
+fails typecheck, and the old escape was `default: throw error`. That compiles
+when a new code is added. `result.error.code` is `never` in `default` for one
+code or many.
+
+When the switch already lists every member of a `CodedError<'a'> | CodedError<'b'>`
+union, `result.error` itself is `never` in `default` and `.code` does not
+typecheck. `assertNever(result.error)` is the same exhaustiveness — do not
+`throw error`.
+
 ```ts
-default: assertNever(result.error); // known union — new code = compile error
-default: throw result.error;        // open codes — new code = runtime throw
+default: assertNever(result.error.code); // known union — new code = compile error
+default: throw result.error;             // open codes — new code = runtime throw
 ```
 
 At a boundary, reach for `isCodedError`, **not** bare `instanceof CodedError`.
@@ -135,7 +148,7 @@ if (isCodedError(result.error)) {   // keeps CodedError<'a'> | CodedError<'b'>
   switch (result.error.code) {
     case 'a': /* … */ break;
     case 'b': /* … */ break;
-    default: assertNever(result.error); // still exhaustive
+    default: assertNever(result.error); // error is already `never` — same exhaustiveness
   }
 }
 ```
@@ -166,4 +179,7 @@ echo of `assertNever`.
 
 ## Status log
 
+- 2026-09 ✅ Active — remap is `failureCode(code, { cause, extra })`; `extra`
+  carries vendor context across remaps. Close known switches with
+  `assertNever(result.error.code)` (the error object when that is already `never`).
 - 2026-07 ✅ Active

@@ -7,8 +7,8 @@ retired:
 # Result
 
 **What it is:** `Result<T, E>` makes failure a value, not a throw:
-`{ success: true; data }` | `{ success: false; error }`. Callers branch on
-`success`; the error branch usually carries a [`CodedError`](../coded-error).
+`Success<T>` | `Failure<E>`. Callers branch on `success`; the error branch
+usually carries a [`CodedError`](../coded-error).
 
 **Why it appealed:** I abandoned `try/catch` for this. A thrown error is invisible
 in a function's signature — callers forget it exists and the compiler never
@@ -23,7 +23,7 @@ narrowing and the benefit is gone.
 ```ts
 async function getUser(id: string) {
   const row = await db.users.find(id);
-  if (!row) return failureCode('not_found'); // Result<never, CodedError<'not_found'>>
+  if (!row) return failureCode('not_found'); // Failure<CodedError<'not_found'>>
   return success(row);                        // inferred — don't annotate
 }
 
@@ -35,9 +35,9 @@ else result.error.code;            // 'not_found'
 ## Artifacts
 
 - [`result.ts`](./result.ts) — the type, constructors, `resultify` / `tryCatch`,
-  combinators (`mapResult`, `chainResult`, `flatten`), and the narrowing asserts.
+  combinators (`chain`, `map`, `flatten`), and the narrowing asserts.
 - [`using-result.ts`](./using-result.ts) — producing, wrapping a promise,
-  transforming, chaining, and narrowing at a boundary.
+  remapping with `{ cause }`, chaining, and narrowing at a boundary.
 
 ## Gotchas
 
@@ -53,4 +53,7 @@ lives in [coded-error](../coded-error).
 
 ## Status log
 
+- 2026-09 ✅ Active — `failureFromCause` folded into `failureCode(code, { cause, extra })`.
+  Remap message defaults to the new code, not `cause.message`. `Success` / `Failure`
+  are now the result object types (`SuccessOf` / `FailureOf` extract them).
 - 2026-07 ✅ Active
