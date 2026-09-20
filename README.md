@@ -5,11 +5,10 @@
 | Domain                           | Topics                                                                                                      |
 | -------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | [typescript](./typescript)       | [result](./typescript/result), [coded-error](./typescript/coded-error), [inference](./typescript/inference) |
-| [pgboss](./pgboss)               | [queues](./pgboss/queues)                                                                                   |
+| [infra](./infra)                 | [app](./infra/app), [queues](./infra/queues), [events](./infra/events), [pub-sub](./infra/pub-sub)           |
 | [observability](./observability) | [logger](./observability/logger)                                                                            |
 | [orpc](./orpc)                   | [rpc](./orpc/rpc)                                                                                           |
 | [di](./di)                       | [inversify](./di/inversify)                                                                                 |
-| [lifecycle](./lifecycle)         | [app](./lifecycle/app)                                                                                      |
 | [analytics](./analytics)         | [events](./analytics/events)                                                                                |
 | [caching](./caching)             | [dataloader](./caching/dataloader), [expiring-map](./caching/expiring-map)                                  |
 

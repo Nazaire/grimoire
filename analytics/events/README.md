@@ -16,7 +16,7 @@ that timestamp is, not two queue ids.
 **Why it appealed:** `posthog.capture` in the service made the request wait
 on a vendor, double-fired on retry, and lost the anonymous id that only
 existed on the incoming request. Publishing in the write is the same
-discipline as [queues](../../pgboss/queues): the job is another row in that
+discipline as [queues](../../infra/queues): the job is another row in that
 transaction. Delivery can fail and retry without redoing the order.
 
 **How it's held up:** Context-at-the-edge holds — if you don't stamp it on
@@ -65,7 +65,7 @@ PostHog.
 `AnalyticsEventService` publishes; `PosthogEventQueue` subscribes. Age of
 `occurred_at` > 7 days → historical priority, else live. Two workers claim
 from **one** queue (`minPriority` / `maxPriority`). Capture happens there.
-Settlement is [queues](../../pgboss/queues) — `success` after capture.
+Settlement is [queues](../../infra/queues) — `success` after capture.
 
 ## Status log
 

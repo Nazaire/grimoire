@@ -9,7 +9,8 @@
  */
 
 import { failureCode, success } from '../../typescript/result/result';
-import type { AcceptOrderQueue, OrderPaidEventService } from './defining-a-queue';
+import type { AcceptOrderQueue } from './defining-a-queue';
+import type { OrderPaidEventService } from '../events/order-paid-event';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PUBLISH IN THE WRITE: persist, then publish on the same tx. Exclusive

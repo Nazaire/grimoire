@@ -1,7 +1,7 @@
 /**
  * Inversify v7 does not inherit `@inject` fields or `@preDestroy` from a base.
  * The concrete class takes both `@injectable('Singleton')` and
- * `@injectFromHierarchy()`. pgboss queues / workers / publishers all do this.
+ * `@injectFromHierarchy()`. Infra queues / workers / publishers all do this.
  */
 
 abstract class PgBossWorker {
