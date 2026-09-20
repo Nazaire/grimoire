@@ -10,16 +10,19 @@ export type CodedUnion<C extends string> = C extends infer U extends string ? Co
 
 export class CodedError<out C extends string = string> extends Error {
   readonly code: C;
+  readonly extra?: Record<string, unknown>;
 
-  constructor(code: C, message?: string, options?: ErrorOptions) {
+  constructor(code: C, message?: string, options?: ErrorOptions & { extra?: Record<string, unknown> }) {
     super(message ?? code, options);
     this.name = new.target.name;
     this.code = code;
+    this.extra = options?.extra;
   }
 
   static fromCause<const C extends string>(code: C, error: unknown, message?: string): CodedError<C> {
     const cause = toErrorCause(error);
-    const wrapped = new CodedError(code, message ?? messageFromCause(cause), { cause });
+    const extra = cause instanceof CodedError ? cause.extra : undefined;
+    const wrapped = new CodedError(code, message ?? messageFromCause(cause), { cause, extra });
     captureStackFromCaller(wrapped, CodedError.fromCause);
     return wrapped;
   }
@@ -38,10 +41,11 @@ export class CodedError<out C extends string = string> extends Error {
     return this.message === this.code ? code : `${code} ${this.message}`;
   }
 
-  toJSON(): { code: C; message: string } {
+  toJSON(): { code: C; message: string; extra?: Record<string, unknown> } {
     return {
       code: this.code,
       message: this.message,
+      ...(this.extra ? { extra: this.extra } : {}),
     };
   }
 }
@@ -60,7 +64,6 @@ export function isCodedError<E>(error: E): error is NarrowCodedError<E> {
 type NarrowCodedError<E> = [Extract<E, CodedError<string>>] extends [never]
   ? E & CodedError
   : Extract<E, CodedError<string>>;
-
 
 function toErrorCause(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error), { cause: error });

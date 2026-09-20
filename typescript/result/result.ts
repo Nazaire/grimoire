@@ -5,21 +5,23 @@
 
 import { CodedError } from '../coded-error/coded-error';
 
-export type Result<T, E = Error> = { success: true; data: T } | { success: false; error: E };
-export type Success<R extends Result<any, any>> = R extends { success: true; data: infer T } ? T : never;
-export type Failure<R extends Result<any, any>> = R extends { success: false; error: infer E } ? E : never;
+export type Success<T = unknown> = { success: true; data: T };
+export type Failure<E = Error> = { success: false; error: E };
+export type Result<T = unknown, E = Error> = Success<T> | Failure<E>;
+export type SuccessOf<R extends Result> = R extends Success<infer T> ? Success<T> : never;
+export type FailureOf<R extends Result> = R extends Failure<infer E> ? Failure<E> : never;
 
 /**
  * Creates a success result
  */
-export function success<T>(data: T): Result<T, never> {
+export function success<T>(data: T): Success<T> {
   return { success: true, data };
 }
 
 /**
  * Creates an error result
  */
-export function failure<E = Error>(error: E): Result<never, E> {
+export function failure<E = Error>(error: E): Failure<E> {
   return { success: false, error };
 }
 
@@ -50,29 +52,29 @@ export async function tryCatch<T>(fn: () => T | PromiseLike<T>): Promise<Result<
  * `failureCode('a') | failureCode('b') | success(data)`). {@link Success} /
  * {@link Failure} distribute over that union so the output is a single Result.
  */
-export function flatten<Inner extends Result<any, any>, F>(
-  result: Result<Inner, F>,
-): Result<Success<Inner>, Failure<Inner> | F> {
+export function flatten<E, R extends Result>(result: Result<R, E>): Failure<E> | R {
   if (!result.success) return result;
-  return result.data as Result<Success<Inner>, Failure<Inner> | F>;
+  return result.data;
 }
 
 /**
  * Maps a successful result to a new value
  */
-export function mapResult<T, U, E>(result: Result<T, E>, fn: (data: T) => U): Result<U, E> {
+export function map<T, E, R extends Result<T>>(result: Result<T, E>, fn: (data: T) => R): Failure<E> | R {
   if (result.success) {
-    return success(fn(result.data));
+    return fn(result.data);
   }
   return result;
 }
 
 /**
- * Chains result-returning operations
+ * Chains result-returning operations. `fn` may be sync or async — the return type
+ * is inferred from `fn` (a `Result` or `Promise<Result>`). Failed inputs short-circuit
+ * without calling `fn`.
  */
-export function chainResult<T, U, E>(result: Result<T, E>, fn: (data: T) => Result<U, E>): Result<U, E> {
+export function chain<T, E, R>(result: Result<T, E>, fn: (data: Success<T>) => R): Failure<E> | R {
   if (result.success) {
-    return fn(result.data);
+    return fn(result);
   }
   return result;
 }
@@ -97,24 +99,47 @@ export function unwrapOr<T, E>(result: Result<T, E>, defaultValue: T): T {
   return defaultValue;
 }
 
-/** `failure(new CodedError(...))` with stack starting at the call site. */
-export function failureCode<const C extends string>(code: C, message?: string): Result<never, CodedError<C>> {
-  const err = new CodedError(code, message);
-  if (typeof Error.captureStackTrace === 'function') {
-    Error.captureStackTrace(err, failureCode);
+export type FailureCodeOptions = {
+  cause?: unknown;
+  extra?: Record<string, unknown>;
+};
+
+export function failureCode<const C extends string>(
+  code: C,
+  message?: string,
+  options?: FailureCodeOptions,
+): Result<never, CodedError<C>>;
+export function failureCode<const C extends string>(code: C, options: FailureCodeOptions): Result<never, CodedError<C>>;
+export function failureCode<const C extends string>(
+  code: C,
+  messageOrOptions?: string | FailureCodeOptions,
+  options?: FailureCodeOptions,
+): Result<never, CodedError<C>> {
+  if (typeof messageOrOptions === 'object' && messageOrOptions !== null) {
+    return codedFailure(code, undefined, messageOrOptions);
   }
-  return failure(err);
+  return codedFailure(code, messageOrOptions, options ?? {});
 }
 
-/** `failure(CodedError.fromCause(...))` — remap wrapping an upstream error. */
-export function failureFromCause<const C extends string>(
+function codedFailure<const C extends string>(
   code: C,
-  error: unknown,
-  message?: string,
+  message: string | undefined,
+  options: FailureCodeOptions,
 ): Result<never, CodedError<C>> {
-  const err = CodedError.fromCause(code, error, message);
+  const cause =
+    options.cause === undefined
+      ? undefined
+      : options.cause instanceof Error
+        ? options.cause
+        : new Error(String(options.cause), { cause: options.cause });
+  const inheritedExtra = cause instanceof CodedError ? cause.extra : undefined;
+  const mergedExtra = { ...inheritedExtra, ...options.extra };
+  const err = new CodedError(code, message, {
+    cause,
+    extra: Object.keys(mergedExtra).length > 0 ? mergedExtra : undefined,
+  });
   if (typeof Error.captureStackTrace === 'function') {
-    Error.captureStackTrace(err, failureFromCause);
+    Error.captureStackTrace(err, failureCode);
   }
   return failure(err);
 }

@@ -3,24 +3,14 @@
  * Domain is deliberately generic (users, orders) — the shapes are the point.
  */
 
-import {
-  success,
-  failure,
-  failureCode,
-  failureFromCause,
-  resultify,
-  mapResult,
-  chainResult,
-  unwrapOr,
-  assertSuccess,
-} from './result';
+import { success, failure, failureCode, resultify, chain, unwrapOr, assertSuccess } from './result';
 import { CodedError } from '../coded-error/coded-error';
 
 // A fallible operation returns a Result instead of throwing.
 // Do NOT annotate the return type — let it infer so the error union stays precise.
 export async function getUser(id: string) {
   const row = await db.users.findById(id);
-  if (!row) return failureCode('user_not_found'); // Result<never, CodedError<'user_not_found'>>
+  if (!row) return failureCode('user_not_found'); // Failure<CodedError<'user_not_found'>>
   return success(row); // success branch inferred from `row`
 }
 
@@ -36,22 +26,21 @@ export async function callExternalApi() {
   const result = await resultify(fetch('https://example.com/thing'));
   if (!result.success) {
     // Remap an unknown/thrown cause into a code this layer owns; keeps the cause chain.
-    return failureFromCause('service_unavailable', result.error);
+    // Message defaults to the new code, not cause.message — callers switch on code only.
+    return failureCode('service_unavailable', { cause: result.error });
   }
   return success(result.data);
 }
 
-// Combinators transform without unwrapping — the error branch passes straight through.
+// chain sequences a dependent step. `fn` receives the Success object and may be
+// sync or async; a failed input short-circuits without calling `fn`.
 export async function getUserName(id: string) {
   const result = await getUser(id);
-  return mapResult(result, (user) => user.name); // Result<string, CodedError<'user_not_found'>>
+  return chain(result, ({ data: user }) => success(user.name));
 }
 
-// chainResult sequences a dependent step. Both sides share one error type E, so the
-// chained step carries the same error union forward (here it only ever succeeds).
 export async function getUpperName(id: string) {
-  const user = await getUser(id);
-  return chainResult(user, (u) => success(u.name.toUpperCase()));
+  return chain(await getUserName(id), ({ data: name }) => success(name.toUpperCase()));
 }
 
 // unwrapOr collapses to a fallback when you don't care why it failed.
@@ -76,8 +65,8 @@ export async function creditMany(ids: string[]) {
 
 // CodedError.fromCause builds the coded error without wrapping it in a Result yet —
 // for when you need to do something with it (log, capture to Sentry) before returning
-// the failure. failureFromCause would build it and return in one step, giving you no
-// handle on the instance in between.
+// the failure. failureCode(code, { cause }) would build it and return in one step,
+// giving you no handle on the instance in between.
 export async function importData(input: string) {
   const result = await resultify(doWork(input));
   if (!result.success) {

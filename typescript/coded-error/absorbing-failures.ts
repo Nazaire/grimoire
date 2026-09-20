@@ -11,7 +11,6 @@ import {
   success,
   failure,
   failureCode,
-  failureFromCause,
   resultify,
   assertNever,
   assertFailureCode,
@@ -51,7 +50,7 @@ export async function placeOrder(orderId: string) {
     switch (result.error.code) {
       case 'not_found':
         // Caller may branch on this — remap into vocabulary this API owns, keep the cause.
-        return failureFromCause('order_unavailable', result.error);
+        return failureCode('order_unavailable', { cause: result.error });
       case 'conflict':
         // Domain outcome the caller can act on — pass the same instance through unchanged.
         return failure(result.error);
@@ -59,7 +58,7 @@ export async function placeOrder(orderId: string) {
         // Transient upstream health — usually pass through.
         return failure(result.error);
       default:
-        // Known union: if `reserve` adds a code, this stops being `never` and fails the build.
+        // Known union fully listed: `result.error` is already `never`.
         return assertNever(result.error);
     }
   }
@@ -111,7 +110,7 @@ export async function settlePayment() {
         case 'expired':
           return failure(result.error);
         default:
-          return assertNever(result.error); // still exhaustive over the coded members
+          return assertNever(result.error); // error is already `never` — `.code` wouldn't typecheck
       }
     }
     throw result.error; // the non-coded DbError — infra failure, not our contract
