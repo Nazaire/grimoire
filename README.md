@@ -11,6 +11,7 @@
 | [di](./di)                       | [inversify](./di/inversify)                                                                                 |
 | [lifecycle](./lifecycle)         | [app](./lifecycle/app)                                                                                      |
 | [analytics](./analytics)         | [events](./analytics/events)                                                                                |
+| [dataloader](./dataloader)       | [batch](./dataloader/batch)                                                                                 |
 
 <!--
 Add a row per domain as you go, e.g.:
