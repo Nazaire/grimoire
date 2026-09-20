@@ -4,7 +4,7 @@ since: 2026-09
 retired:
 ---
 
-# App
+# Lifecycle
 
 **What it is:** `App extends Lifecycle`. Constructed at boot —
 `new App(container)` — not an injectable. `doStart` / `doStop` are the
@@ -80,12 +80,12 @@ App
 
 A new worker: the class, then that module's `*-workers.ts`. Do not add it to
 `infra/workers.ts`. Settlement (`success` / `failure` / throw) lives in
-[queues](../../pgboss/queues). This topic is who **starts**.
+[workers](../workers). This topic is who **starts**.
 
 `@injectable('Singleton')` + `@injectFromHierarchy()` on every
-`Lifecycle` subclass — see [inversify](../../di/inversify).
+`Lifecycle` subclass — see [di](../di).
 
 ## Status log
 
 - 2026-09 ✅ Active — App is the tree; roles pick HTTP vs consume; modules
-  own `*Workers`.
+  own `*Workers`. Lives under infra with workers and pub/sub.

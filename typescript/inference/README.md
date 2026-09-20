@@ -52,7 +52,7 @@ oRPC DTOs are the **wire** contract ([schemas](../../api/schemas)). They are not
 a service interface. Zod at the edge; inference in the domain.
 
 A `Symbol` token (`FileStorage`) is the same exception as the interface —
-two impls, one slot. See [inversify](../../di/inversify).
+two impls, one slot. See [di](../../infra/di).
 
 ## Status log
 

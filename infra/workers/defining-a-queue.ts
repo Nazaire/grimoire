@@ -1,95 +1,13 @@
 /**
- * What a queue class looks like. Three shapes: an event subscriber (exclusive +
- * DLQ), a cron tick (no DLQ — the next schedule covers a miss), and a direct-send
- * queue this domain both writes and consumes.
+ * What a queue class looks like. Two shapes this domain owns: a cron tick
+ * (no DLQ — the next schedule covers a miss) and a direct-send queue this
+ * domain both writes and consumes. Fan-out to other domains is events/ +
+ * pub-sub, not a second send.
  *
- * Bases live in infra/pgboss (`PgBossQueue`, `PgBossQueueWithDLQ`, `PgBossPublisher`).
- * This file is the subclass you actually write.
+ * Bases live in infra/pgboss (`PgBossQueue`, `PgBossQueueWithDLQ`).
  */
 
 import { z } from 'zod';
-
-// ─────────────────────────────────────────────────────────────────────────────
-// EVENT: this domain publishes; other domains subscribe. Payload is the event
-// schema. Dates come back as strings — coerce on consume.
-// ─────────────────────────────────────────────────────────────────────────────
-
-export const orderPaidEventSchema = z.object({
-  id: z.string(),
-  paidAt: z.coerce.date(),
-});
-export type OrderPaidEvent = z.infer<typeof orderPaidEventSchema>;
-
-@injectable('Singleton')
-@injectFromHierarchy()
-export class OrderPaidEventService extends PgBossPublisher<OrderPaidEvent> {
-  readonly schema = orderPaidEventSchema;
-
-  get id() {
-    return pgBossEventId('order.paid');
-  }
-
-  // One options bag on publish — this key dedupes on every subscriber.
-  protected defaultSingletonKey(data: OrderPaidEvent) {
-    return data.id;
-  }
-}
-
-export type OrderPaidQueueOpts = {
-  policy: 'exclusive';
-  singletonKey: string;
-};
-
-@injectable('Singleton')
-@injectFromHierarchy()
-export class OrderPaidQueue extends PgBossQueueWithDLQ<OrderPaidEvent, OrderPaidQueueOpts> {
-  static readonly id = pgBossQueueId('order-paid');
-  static readonly deadLetterId = pgBossQueueId('order-paid-dlq');
-  static readonly schema = orderPaidEventSchema;
-
-  constructor(
-    @inject(PgBoss) boss: PgBoss,
-    @inject(OrderPaidEventService) private readonly orderPaid: OrderPaidEventService,
-  ) {
-    super(boss);
-  }
-
-  get policy() {
-    return PgBossQueue.POLICY.EXCLUSIVE;
-  }
-
-  get partition() {
-    return false;
-  }
-
-  get retry(): QueueRetryOptions {
-    return { limit: 10, delay: 5, backoff: true, delayMax: 600 };
-  }
-
-  get expireInSeconds() {
-    return 300;
-  }
-
-  get heartbeatSeconds() {
-    return 60;
-  }
-
-  get warningQueueSize() {
-    return 100;
-  }
-
-  get notify() {
-    return true; // enqueue wakes the worker; do not wait for the next poll
-  }
-
-  defaultSingletonKey(data: OrderPaidEvent) {
-    return data.id;
-  }
-
-  get subscriptions() {
-    return [this.orderPaid];
-  }
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CRON TICK: exclusive so two pods don't run the same minute twice. retryLimit 0,
@@ -152,9 +70,14 @@ export class OrderSweepQueue extends PgBossQueue<OrderSweepJob, { policy: 'exclu
 export const acceptOrderJobSchema = z.object({ id: z.string() });
 export type AcceptOrderJob = z.infer<typeof acceptOrderJobSchema>;
 
+export type AcceptOrderQueueOpts = {
+  policy: 'exclusive';
+  singletonKey: string;
+};
+
 @injectable('Singleton')
 @injectFromHierarchy()
-export class AcceptOrderQueue extends PgBossQueueWithDLQ<AcceptOrderJob, OrderPaidQueueOpts> {
+export class AcceptOrderQueue extends PgBossQueueWithDLQ<AcceptOrderJob, AcceptOrderQueueOpts> {
   static readonly id = pgBossQueueId('accept-order');
   static readonly deadLetterId = pgBossQueueId('accept-order-dlq');
   static readonly schema = acceptOrderJobSchema;
@@ -191,7 +114,6 @@ export class AcceptOrderQueue extends PgBossQueueWithDLQ<AcceptOrderJob, OrderPa
 // Framework placeholders so the file reads as real usage.
 declare const PgBoss: unique symbol;
 declare function pgBossQueueId<const T extends string>(id: T): T;
-declare function pgBossEventId<const T extends string>(id: T): T;
 declare abstract class PgBossQueue<T, _O = unknown> {
   static readonly POLICY: { EXCLUSIVE: 'exclusive'; STANDARD: 'standard' };
   constructor(boss: typeof PgBoss);
@@ -205,14 +127,8 @@ declare abstract class PgBossQueue<T, _O = unknown> {
   abstract get notify(): boolean;
 }
 declare abstract class PgBossQueueWithDLQ<T, O = unknown> extends PgBossQueue<T, O> {}
-declare abstract class PgBossPublisher<T> {
-  abstract readonly schema: z.ZodType<T>;
-  abstract get id(): string;
-  publish(data: T, options?: { tx?: unknown; priority?: number }): Promise<void>;
-}
 type QueueRetryOptions =
   | { limit: number; delay?: number; backoff?: false }
   | { limit: number; delay?: number; backoff: true; delayMax?: number };
 declare function injectable(scope?: string): ClassDecorator;
 declare function injectFromHierarchy(): ClassDecorator;
-declare function inject(token: unknown): ParameterDecorator;

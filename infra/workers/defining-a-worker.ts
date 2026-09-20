@@ -7,13 +7,9 @@
 
 import { type CodedError } from '../../typescript/coded-error/coded-error';
 import { assertNever, failure, failureCode, success, type Result } from '../../typescript/result/result';
-import {
-  AcceptOrderQueue,
-  type OrderPaidEvent,
-  OrderPaidQueue,
-  type OrderSweepJob,
-  OrderSweepQueue,
-} from './defining-a-queue';
+import { AcceptOrderQueue, type OrderSweepJob, OrderSweepQueue } from './defining-a-queue';
+import { type OrderPaidEvent } from '../pub-sub/order-paid-event';
+import { OrderPaidQueue } from '../pub-sub/subscriptions';
 
 type OrderPaidResult = Result<{ outcome: 'accepted' | 'already_accepted' }, CodedError>;
 
