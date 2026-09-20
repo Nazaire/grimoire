@@ -10,6 +10,7 @@
 | [orpc](./orpc)                   | [rpc](./orpc/rpc)                                                      |
 | [di](./di)                       | [inversify](./di/inversify)                                            |
 | [lifecycle](./lifecycle)         | [app](./lifecycle/app)                                                 |
+| [analytics](./analytics)         | [events](./analytics/events)                                           |
 
 <!--
 Add a row per domain as you go, e.g.:
