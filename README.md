@@ -11,6 +11,7 @@
 | [di](./di)                       | [inversify](./di/inversify)                                                                                 |
 | [lifecycle](./lifecycle)         | [app](./lifecycle/app)                                                                                      |
 | [analytics](./analytics)         | [events](./analytics/events)                                                                                |
+| [caching](./caching)             | [dataloader](./caching/dataloader), [expiring-map](./caching/expiring-map)                                  |
 
 <!--
 Add a row per domain as you go, e.g.:
