@@ -106,7 +106,7 @@ you remembered to add.
 ## Worker
 
 `PgBossWorker<Queue, Result>`. `@injectable('Singleton')` +
-`@injectFromHierarchy()`. Implement `work(job)`.
+`@injectFromHierarchy()` — see [di](../di). Implement `work(job)`.
 
 - Orchestrate; call services. Do not become a second domain layer.
 - `workers` / `workerConcurrency` / `pollingIntervalSeconds` are

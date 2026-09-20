@@ -5,10 +5,9 @@
 | Domain                           | Topics                                                                                                      |
 | -------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | [typescript](./typescript)       | [result](./typescript/result), [coded-error](./typescript/coded-error), [inference](./typescript/inference) |
-| [infra](./infra)                 | [app](./infra/app), [queues](./infra/queues), [pub-sub](./infra/pub-sub)                                     |
+| [infra](./infra)                 | [app](./infra/app), [di](./infra/di), [queues](./infra/queues), [pub-sub](./infra/pub-sub)                    |
 | [observability](./observability) | [logger](./observability/logger)                                                                            |
 | [orpc](./orpc)                   | [rpc](./orpc/rpc)                                                                                           |
-| [di](./di)                       | [inversify](./di/inversify)                                                                                 |
 | [analytics](./analytics)         | [events](./analytics/events)                                                                                |
 | [caching](./caching)             | [dataloader](./caching/dataloader), [expiring-map](./caching/expiring-map)                                  |
 

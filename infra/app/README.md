@@ -83,7 +83,7 @@ A new worker: the class, then that module's `*-workers.ts`. Do not add it to
 [queues](../queues). This topic is who **starts**.
 
 `@injectable('Singleton')` + `@injectFromHierarchy()` on every
-`Lifecycle` subclass — see [inversify](../../di/inversify).
+`Lifecycle` subclass — see [di](../di).
 
 ## Status log
 
