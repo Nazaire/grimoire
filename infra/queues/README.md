@@ -10,8 +10,8 @@ retired:
 stable id, a Zod schema, and retry/expire/notify settings. The worker
 implements `work(job)` and returns a [`Result`](../../typescript/result).
 `queue.send(data, { tx })` when **this** domain owns the write *and* the
-follow-up. A fact other domains should react to is an
-[event](../events), not a send.
+follow-up. A fact other domains should react to is
+[pub/sub](../pub-sub), not a send.
 
 **Why it appealed:** A string queue name plus a throw-to-fail handler hid
 the contract. The queue class is the settings; `work`'s `Result` is the
@@ -100,8 +100,8 @@ row in that write. The worker is the next edge. Service classes stay
 thin: one persist, at most one vendor hop, then `send` with `{ tx }`.
 Do not use a job chain to nest IO the request was not allowed to nest.
 
-Fan-out to other domains is [events](../events) over
-[pub-sub](../pub-sub), not a second `send` you remembered to add.
+Fan-out to other domains is [pub/sub](../pub-sub), not a second `send`
+you remembered to add.
 
 ## Worker
 
@@ -117,5 +117,5 @@ Fan-out to other domains is [events](../events) over
 ## Status log
 
 - 2026-09 ✅ Active — `PgBossWorker` + `PgBossQueue`. Settlement is
-  `Result`. `send` rides the write's transaction. Events and pub/sub
-  are sibling topics under infra.
+  `Result`. `send` rides the write's transaction. Fan-out is
+  [pub-sub](../pub-sub).

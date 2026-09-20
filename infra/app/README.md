@@ -88,4 +88,4 @@ A new worker: the class, then that module's `*-workers.ts`. Do not add it to
 ## Status log
 
 - 2026-09 ✅ Active — App is the tree; roles pick HTTP vs consume; modules
-  own `*Workers`. Lives under infra with queues, events, and pub/sub.
+  own `*Workers`. Lives under infra with queues and pub/sub.

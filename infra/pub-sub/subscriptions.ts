@@ -4,7 +4,7 @@
  * other computer — not quote.paid inside this process.
  */
 
-import { OrderPaidEventService, orderPaidEventSchema, type OrderPaidEvent } from '../events/order-paid-event';
+import { OrderPaidEventService, orderPaidEventSchema, type OrderPaidEvent } from './order-paid-event';
 
 export type OrderPaidQueueOpts = {
   policy: 'exclusive';
