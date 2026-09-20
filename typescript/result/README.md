@@ -49,7 +49,8 @@ return success(items.map((it) => ({ id: it.id, result: process(it) })));
 ```
 
 Consuming failures — remapping, `resultify` boundaries, closing the `switch` —
-lives in [coded-error](../coded-error).
+lives in [coded-error](../coded-error). Logging `{ error }` at the boundary
+lives in [logger](../../observability/logger).
 
 ## Status log
 

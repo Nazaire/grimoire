@@ -65,7 +65,9 @@ throw error;                                           // throw
 
 Remap with `{ cause }`, never `failureCode(code, err.toString())` — the latter
 drops the cause chain. Message is optional API copy and defaults to the **new
-code**, not `cause.message`; callers switch on `code` only. Facts go in `extra`.
+code**, not `cause.message`; callers switch on `code` only. Facts go in `extra`
+— the [logger](../../observability/logger) copies it onto Sentry when the
+boundary logs `{ error }`.
 
 ```ts
 return failureCode('order_failed', { cause: error });  // error survives as .cause
