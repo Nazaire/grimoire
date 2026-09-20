@@ -64,16 +64,16 @@ export async function creditMany(ids: string[]) {
 }
 
 // CodedError.fromCause builds the coded error without wrapping it in a Result yet —
-// for when you need to do something with it (log, capture to Sentry) before returning
-// the failure. failureCode(code, { cause }) would build it and return in one step,
-// giving you no handle on the instance in between.
+// for when you need to do something with it (log) before returning the failure.
+// failureCode(code, { cause }) would build it and return in one step, giving you no
+// handle on the instance in between. logger.error({ error }) is the Sentry sink —
+// do not captureException beside it.
 export async function importData(input: string) {
   const result = await resultify(doWork(input));
   if (!result.success) {
     const error = CodedError.fromCause('import_failed', result.error);
-    logger.error(error);
-    Sentry.captureException(error);
-    return failure(error); // return the same instance we just logged/captured
+    logger.error('import failed', { error });
+    return failure(error); // return the same instance we just logged
   }
   return success(result.data);
 }
@@ -83,5 +83,4 @@ declare const db: {
   users: { findById(id: string): Promise<{ name: string; primaryOrderId?: string } | null> };
 };
 declare function doWork(input: string): Promise<{ rows: number }>;
-declare const logger: { error(err: unknown): void };
-declare const Sentry: { captureException(err: unknown): void };
+declare const logger: { error(msg: string, fields?: { error: unknown }): void };
