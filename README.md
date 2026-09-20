@@ -2,11 +2,12 @@
 
 ## Index
 
-| Domain                       | Topics                                                                 |
-| ---------------------------- | ---------------------------------------------------------------------- |
-| [typescript](./typescript)   | [result](./typescript/result), [coded-error](./typescript/coded-error) |
-| [pgboss](./pgboss)           | [queues](./pgboss/queues)                                              |
-| [observability](./observability) | [logger](./observability/logger)                                   |
+| Domain                           | Topics                                                                 |
+| -------------------------------- | ---------------------------------------------------------------------- |
+| [typescript](./typescript)       | [result](./typescript/result), [coded-error](./typescript/coded-error) |
+| [pgboss](./pgboss)               | [queues](./pgboss/queues)                                              |
+| [observability](./observability) | [logger](./observability/logger)                                       |
+| [orpc](./orpc)                   | [rpc](./orpc/rpc)                                                      |
 
 <!--
 Add a row per domain as you go, e.g.:
