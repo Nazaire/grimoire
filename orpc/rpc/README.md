@@ -45,8 +45,6 @@ fields the other audience never meant to publish.
   (service + exhaustive map), `cause` on the throw.
 - [`audience-dtos.ts`](./audience-dtos.ts) — user `.pick` embed vs ops-only
   fields; `.omit().extend()` as a seam.
-- [`ops-envelope.ts`](./ops-envelope.ts) — `{ item }` / `{ items, nextCursor }`,
-  named path params, filters as sibling query keys.
 
 ## Audience
 
@@ -91,14 +89,6 @@ change a type; narrow an enum; change which error codes a client switches on.
 
 Deprecate, then remove: add the replacement, keep the old, mark it in OpenAPI,
 dual-read until clients move.
-
-## Ops collections
-
-Ops-ui binds tables to a shared envelope. List / retrieve / count — not a
-generic `/r` resource API. Path params are named after the resource
-(`{orderId}`), never `{id}`. Retrieve body is always `{ item }`. List body is
-always `{ items, nextCursor }` (`null` = last page). Filters are sibling query
-keys (DTO field = Prisma column), not a nested `filters` bag.
 
 ## Status log
 
