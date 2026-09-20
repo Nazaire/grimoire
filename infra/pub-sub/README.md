@@ -49,7 +49,7 @@ get subscriptions() {
 
 `events/<aggregate>-<fact>-event.ts` in the domain that owns the write.
 The reacting queue lives in the *subscriber's* domain. Settlement of
-that queue is [queues](../queues).
+that queue is [workers](../workers).
 
 Publish in the same Prisma tx as the row. After the tx returns, the
 worker can run against uncommitted state — or run after a rollback. Do
@@ -63,7 +63,7 @@ not rename `id`. A new name orphans existing `subscription` rows.
 | Rabbit  | another process                   | protobuf on the `events` topic   |
 
 pg-boss `notify` still applies — publish should wake subscribers, not
-wait for the poll. [App](../app) starts both connections because HTTP
+wait for the poll. [Lifecycle](../lifecycle) starts both connections because HTTP
 publishes.
 
 ## Status log

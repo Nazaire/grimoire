@@ -4,13 +4,13 @@ since: 2026-09
 retired:
 ---
 
-# Queues
+# Workers
 
-**What it is:** `PgBossQueue` + `PgBossWorker`. A queue is a class with a
-stable id, a Zod schema, and retry/expire/notify settings. The worker
-implements `work(job)` and returns a [`Result`](../../typescript/result).
-`queue.send(data, { tx })` when **this** domain owns the write *and* the
-follow-up. A fact other domains should react to is
+**What it is:** `PgBossWorker` + `PgBossQueue`. The worker implements
+`work(job)` and returns a [`Result`](../../typescript/result). A queue
+is a class with a stable id, a Zod schema, and retry/expire/notify
+settings. `queue.send(data, { tx })` when **this** domain owns the write
+*and* the follow-up. A fact other domains should react to is
 [pub/sub](../pub-sub), not a send.
 
 **Why it appealed:** A string queue name plus a throw-to-fail handler hid
@@ -112,7 +112,7 @@ you remembered to add.
 - `workers` / `workerConcurrency` / `pollingIntervalSeconds` are
   deliberate. pg-boss defaults to 1 / 1 / 2.
 - Register the class in that module's `*-workers.ts` (`OrdersWorkers`,
-  …). Infra `Workers` composes those groups — see [app](../app).
+  …). Infra `Workers` composes those groups — see [lifecycle](../lifecycle).
 
 ## Status log
 

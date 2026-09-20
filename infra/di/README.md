@@ -68,4 +68,4 @@ Unit tests `new` the class with stubs. They do not resolve the graph.
 ## Status log
 
 - 2026-09 ✅ Active — autobind + class tokens. `injectFromHierarchy` on every
-  subclass of an injecting / lifecycle base. Lives under infra with App.
+  subclass of an injecting / lifecycle base. Lives under infra with lifecycle.

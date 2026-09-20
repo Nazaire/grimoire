@@ -5,7 +5,7 @@
 | Domain                           | Topics                                                                                                      |
 | -------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | [typescript](./typescript)       | [result](./typescript/result), [coded-error](./typescript/coded-error), [inference](./typescript/inference) |
-| [infra](./infra)                 | [app](./infra/app), [di](./infra/di), [queues](./infra/queues), [pub-sub](./infra/pub-sub)                    |
+| [infra](./infra)                 | [lifecycle](./infra/lifecycle), [di](./infra/di), [workers](./infra/workers), [pub-sub](./infra/pub-sub)     |
 | [observability](./observability) | [logger](./observability/logger)                                                                            |
 | [orpc](./orpc)                   | [rpc](./orpc/rpc)                                                                                           |
 | [analytics](./analytics)         | [events](./analytics/events)                                                                                |
