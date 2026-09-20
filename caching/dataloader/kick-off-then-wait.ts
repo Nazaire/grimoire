@@ -4,7 +4,7 @@
  * TypeScript dropped the pairing (`get(id)!`).
  */
 
-import { success } from '../../typescript/result/result';
+import { success } from '../../../typescript/result/result';
 import type { ProductShopifyProvider } from './on-the-provider';
 
 export async function loadLineProducts(catalog: ProductShopifyProvider, lineProductIds: string[]) {

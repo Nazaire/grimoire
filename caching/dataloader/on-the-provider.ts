@@ -1,10 +1,11 @@
 /**
  * One loader per remote key, on the provider. The batch fn lists once and
- * returns in input-id order. getX(id) loads, maps null to not_found, and
- * clears a retryable vendor failure so the cache does not pin it.
+ * returns in input-id order. getX(id) loads and maps null to not_found.
+ * cache: false — this tick only. Catalog TTL is the opt-in, not the default.
  */
 
-import { assertNever, failure, failureCode, success } from '../../typescript/result/result';
+import { assertNever, failure, failureCode, success } from '../../../typescript/result/result';
+import { ExpiringMap } from '../expiring-map/expiring-map';
 
 @injectable('Singleton')
 export class ProductShopifyProvider {
@@ -21,7 +22,7 @@ export class ProductShopifyProvider {
       {
         name: 'product-shopify-loader',
         maxBatchSize: 100,
-        cacheMap: new ExpiringMap(10 * 60_000, { gcTime: 10 * 60_000 }),
+        cache: false, // typical — batch this tick, forget
       },
     );
   }
@@ -32,7 +33,6 @@ export class ProductShopifyProvider {
       switch (result.error.code) {
         case 'service_failed':
         case 'service_unavailable':
-          this.loader.clear(productId); // ✗ don't cache a blip
           return failure(result.error);
         default:
           assertNever(result.error.code);
@@ -41,6 +41,32 @@ export class ProductShopifyProvider {
     if (result.data === null) return failureCode('product_not_found');
     return success(result.data);
   }
+}
+
+// Catalog is the exception — hot, stable, measured. Short TTL, in-memory.
+// Then clear a retryable failure so the cache does not pin it.
+export function catalogLoaderOptions() {
+  return {
+    name: 'product-shopify-loader',
+    maxBatchSize: 100,
+    cacheMap: new ExpiringMap(10 * 60_000, { gcTime: 10 * 60_000 }),
+  };
+}
+
+export async function getCatalogProduct(loader: DataLoader<string, ProductLoad>, productId: string) {
+  const result = await loader.load(productId);
+  if (!result.success) {
+    switch (result.error.code) {
+      case 'service_failed':
+      case 'service_unavailable':
+        loader.clear(productId); // don't cache a blip
+        return failure(result.error);
+      default:
+        assertNever(result.error.code);
+    }
+  }
+  if (result.data === null) return failureCode('product_not_found');
+  return success(result.data);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -54,6 +80,14 @@ export class PrismaByIdLoader {
       return ids.map(() => success(null)); // ✗ compose the join (INCLUDE); this is a second planner
     });
   }
+}
+
+export function singletonWithDefaultCache() {
+  return { name: 'product-shopify-loader' }; // ✗ DataLoader defaults to an unbounded Map; the singleton pins the pod
+}
+
+export function cacheBecauseTheLoaderIsThere() {
+  return { cache: true }; // ✗ batching already happened; this remembers across ticks
 }
 
 export async function cachesTheOutage(loader: DataLoader<string, ProductLoad>, id: string) {
@@ -70,7 +104,7 @@ type ProductLoad =
 declare class DataLoader<K, V> {
   constructor(
     batch: (keys: readonly K[]) => Promise<V[]>,
-    opts?: { name: string; maxBatchSize: number; cacheMap: unknown },
+    opts?: { name: string; maxBatchSize: number; cache?: boolean; cacheMap?: unknown },
   );
   load(key: K): Promise<V>;
   clear(key: K): void;
@@ -81,9 +115,6 @@ declare class ProductShopifyClient {
   }): Promise<
     { success: true; data: Product[] } | { success: false; error: { code: 'service_failed' | 'service_unavailable' } }
   >;
-}
-declare class ExpiringMap<_K, _V> {
-  constructor(ttl: number, opts?: { gcTime: number });
 }
 declare function injectable(scope?: string): ClassDecorator;
 declare function inject(token: unknown): ParameterDecorator;
