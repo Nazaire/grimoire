@@ -2,15 +2,15 @@
 
 ## Index
 
-| Domain                           | Topics                                                                 |
-| -------------------------------- | ---------------------------------------------------------------------- |
-| [typescript](./typescript)       | [result](./typescript/result), [coded-error](./typescript/coded-error) |
-| [pgboss](./pgboss)               | [queues](./pgboss/queues)                                              |
-| [observability](./observability) | [logger](./observability/logger)                                       |
-| [orpc](./orpc)                   | [rpc](./orpc/rpc)                                                      |
-| [di](./di)                       | [inversify](./di/inversify)                                            |
-| [lifecycle](./lifecycle)         | [app](./lifecycle/app)                                                 |
-| [analytics](./analytics)         | [events](./analytics/events)                                           |
+| Domain                           | Topics                                                                                                      |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| [typescript](./typescript)       | [result](./typescript/result), [coded-error](./typescript/coded-error), [inference](./typescript/inference) |
+| [pgboss](./pgboss)               | [queues](./pgboss/queues)                                                                                   |
+| [observability](./observability) | [logger](./observability/logger)                                                                            |
+| [orpc](./orpc)                   | [rpc](./orpc/rpc)                                                                                           |
+| [di](./di)                       | [inversify](./di/inversify)                                                                                 |
+| [lifecycle](./lifecycle)         | [app](./lifecycle/app)                                                                                      |
+| [analytics](./analytics)         | [events](./analytics/events)                                                                                |
 
 <!--
 Add a row per domain as you go, e.g.:

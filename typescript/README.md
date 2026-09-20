@@ -5,7 +5,8 @@ discriminated unions, and exhaustiveness — rather than working around it.
 
 ## Topics
 
-| Topic | Status |
-| --- | --- |
-| [result](./result) | ✅ Active |
+| Topic                        | Status    |
+| ---------------------------- | --------- |
+| [result](./result)           | ✅ Active |
 | [coded-error](./coded-error) | ✅ Active |
+| [inference](./inference)     | ✅ Active |
