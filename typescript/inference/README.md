@@ -48,7 +48,7 @@ async markPaid(orderId: string) {
 | `const x = …`                       | No, unless the initializer is untyped (`JSON.parse`, Prisma JSON).                       |
 | `interface` / `implements`          | Only when two (or more) classes must match.                                              |
 
-oRPC DTOs are the **wire** contract ([rpc](../../orpc/rpc)). They are not
+oRPC DTOs are the **wire** contract ([schemas](../../api/schemas)). They are not
 a service interface. Zod at the edge; inference in the domain.
 
 A `Symbol` token (`FileStorage`) is the same exception as the interface —
