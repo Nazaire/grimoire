@@ -7,7 +7,7 @@
 | [typescript](./typescript)       | [result](./typescript/result), [coded-error](./typescript/coded-error), [inference](./typescript/inference) |
 | [pgboss](./pgboss)               | [queues](./pgboss/queues)                                                                                   |
 | [observability](./observability) | [logger](./observability/logger)                                                                            |
-| [orpc](./orpc)                   | [rpc](./orpc/rpc)                                                                                           |
+| [api](./api)                     | [rpc](./api/rpc), [schemas](./api/schemas)                                                                  |
 | [di](./di)                       | [inversify](./di/inversify)                                                                                 |
 | [lifecycle](./lifecycle)         | [app](./lifecycle/app)                                                                                      |
 | [analytics](./analytics)         | [events](./analytics/events)                                                                                |

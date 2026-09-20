@@ -60,7 +60,7 @@ Pick the site that matches the call:
 
 1. `@inject(Class)` — constructors
 2. `res.locals.container.get(...)` — Express
-3. `context.container.get(...)` — oRPC ([rpc](../../orpc/rpc))
+3. `context.container.get(...)` — oRPC ([rpc](../../api/rpc))
 4. `@inject(Container)` — dynamic / composition
 
 Unit tests `new` the class with stubs. They do not resolve the graph.

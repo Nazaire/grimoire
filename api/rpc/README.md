@@ -8,8 +8,8 @@ retired:
 
 **What it is:** Always oRPC. Mount on an **audience** tree — user `/rpc`,
 admin `/rpc-admin`, ops `/rpc-ops`. A handler is thin: `context.container.get`,
-then a query + `toX` / DTO `.parse`, or a service write. The wire type is the
-DTO (`*-schemas.ts`). Services never take or return it.
+then a query + `toX` / DTO `.parse`, or a service write. The wire type is a
+[DTO](../schemas). Services never take or return it.
 
 **Why it appealed:** Express routes mixed auth, Prisma, and HTTP status in one
 function. The error the app switched on was a string message. oRPC puts the
@@ -21,12 +21,14 @@ on `cause` so the [logger](../../observability/logger) interceptor walks it.
 code to HTTP: a `default: throw errors.INTERNAL_SERVER_ERROR` compiles when a
 new code appears and swallows it as 500. Exhaustive `switch` +
 `assertNever(result.error.code)` is the same discipline as coded-error, at the
-edge. DTOs that `.omit().extend()` a foreign schema look like reuse and leak
-fields the other audience never meant to publish.
+edge.
 
 ```ts
 .handler(async ({ input, context, errors }) => {
-  const result = await context.container.get(OrderService).pay(input.params.orderId, input.body);
+  const result = await context.container.get(OrderService).pay(
+    input.params.orderId,
+    input.body.paymentMethodId,
+  );
   if (!result.success) {
     switch (result.error.code) {
       case 'order_not_found':
@@ -35,7 +37,7 @@ fields the other audience never meant to publish.
         assertNever(result.error.code);
     }
   }
-  return { status: 200 as const, body: { order: userOrderDtoSchema.parse(toUserOrder(result.data)) } };
+  return { status: 200 as const, body: { order: toUserOrderDto(result.data) } };
 })
 ```
 
@@ -43,27 +45,17 @@ fields the other audience never meant to publish.
 
 - [`thin-handler.ts`](./thin-handler.ts) — a read (query + DTO), a write
   (service + exhaustive map), `cause` on the throw.
-- [`audience-dtos.ts`](./audience-dtos.ts) — user `.pick` embed vs ops-only
-  fields; `.omit().extend()` as a seam.
 
 ## Audience
 
 Never put admin or ops on user `/rpc`. Clients generate from that tree's
-OpenAPI.
+OpenAPI. Schema files live with the audience — see [schemas](../schemas).
 
 | Audience | Prefix       | Router                   | Schemas                        |
 | -------- | ------------ | ------------------------ | ------------------------------ |
 | User     | `/rpc`       | `orpc.<domain>.ts`       | `<aggregate>-schemas.ts`       |
 | Admin    | `/rpc-admin` | `orpc.<domain>-admin.ts` | `<aggregate>-admin-schemas.ts` |
 | Ops      | `/rpc-ops`   | `orpc.<domain>-ops.ts`   | `<aggregate>-ops-schemas.ts`   |
-
-User schemas are published. Other domains may embed them with `.pick` — that is
-a reference. `.omit` / `.omit().extend()` is not an embed. Ops and admin stay
-with their audience; user DTOs do not import them (`failedReason` must not leak
-to the app). Reuse branded ids from `*-refs.ts`.
-
-Parse at the edge. `toOrderDto` / `orderDtoSchema.parse` is the handler's job,
-not the service's.
 
 ## Mapping codes
 
@@ -78,19 +70,8 @@ to dump the domain object.
 The interceptor logs once: ≤4xx `warn`, 5xx `error`. Do not `context.log.error`
 then throw.
 
-## Wire compatibility
-
-Old app builds and mixed pods keep calling the previous shape.
-
-Compatible: new output field; new optional input; new procedure; wider input.
-
-Breaking: remove/rename a field, path, or procedure; new required input;
-change a type; narrow an enum; change which error codes a client switches on.
-
-Deprecate, then remove: add the replacement, keep the old, mark it in OpenAPI,
-dual-read until clients move.
-
 ## Status log
 
 - 2026-09 ✅ Active — audience trees, thin handlers, `errors.X({ cause })`.
-  Exhaustive code maps at the edge; interceptor is the log.
+  Exhaustive code maps at the edge; interceptor is the log. DTOs live under
+  [schemas](../schemas).
