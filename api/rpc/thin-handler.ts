@@ -7,10 +7,16 @@
 import { z } from 'zod';
 import { type CodedError } from '../../typescript/coded-error/coded-error';
 import { assertNever, type Result } from '../../typescript/result/result';
-import { orderIdSchema, payOrderInputDtoSchema, userOrderDtoSchema, type OrderId } from './audience-dtos';
+import {
+  orderIdSchema,
+  payOrderInputDtoSchema,
+  toUserOrderDto,
+  userOrderDtoSchema,
+  type OrderId,
+} from '../schemas/order-schemas';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// READ: Prisma at the handler, map with toUserOrder, parse the DTO. No service.
+// READ: Prisma at the handler, toUserOrderDto at the edge. No service.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const getOrder = base
@@ -24,7 +30,7 @@ export const getOrder = base
       where: { userId: context.login.userId, id: input.params.orderId },
     });
     if (row === null) throw errors.NOT_FOUND({ message: 'Order not found' });
-    return { status: 200 as const, body: { order: userOrderDtoSchema.parse(toUserOrder(row)) } };
+    return { status: 200 as const, body: { order: toUserOrderDto(row) } };
   });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -39,7 +45,7 @@ export const payOrder = base
   .output(z.object({ status: z.literal(200), body: z.object({ order: userOrderDtoSchema }) }))
   .errors({ NOT_FOUND: {}, BAD_REQUEST: {}, CONFLICT: {}, UNAUTHORIZED: {} })
   .handler(async ({ input, context, errors }) => {
-    const result = await context.container.get(OrderService).pay(input.params.orderId, input.body);
+    const result = await context.container.get(OrderService).pay(input.params.orderId, input.body.paymentMethodId);
     if (!result.success) {
       switch (result.error.code) {
         case 'order_not_found':
@@ -54,7 +60,7 @@ export const payOrder = base
           assertNever(result.error.code);
       }
     }
-    return { status: 200 as const, body: { order: userOrderDtoSchema.parse(toUserOrder(result.data)) } };
+    return { status: 200 as const, body: { order: toUserOrderDto(result.data) } };
   });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -92,7 +98,7 @@ type Errors = {
 };
 
 type HandlerArgs = {
-  input: { params: { orderId: OrderId }; body: unknown };
+  input: { params: { orderId: OrderId }; body: { paymentMethodId: string } };
   context: {
     login: { userId: string };
     container: { get<T>(token: abstract new (...args: never[]) => T): T };
@@ -111,8 +117,10 @@ interface Procedure {
 declare const base: { route(opts: object): Procedure };
 declare function authMiddleware(opts: { required: boolean }): unknown;
 
+type OrderRow = { id: OrderId; status: 'placed' | 'paid' | 'canceled'; total: number };
+
 declare class PrismaClient {
-  order: { findFirst(args: unknown): Promise<unknown | null> };
+  order: { findFirst(args: unknown): Promise<OrderRow | null> };
 }
 
 type PayError =
@@ -123,7 +131,5 @@ type PayError =
   | CodedError<'order_already_paid'>;
 
 declare class OrderService {
-  pay(id: OrderId, body: unknown): Promise<Result<unknown, PayError>>;
+  pay(id: OrderId, paymentMethodId: string): Promise<Result<OrderRow, PayError>>;
 }
-
-declare function toUserOrder(row: unknown): unknown;

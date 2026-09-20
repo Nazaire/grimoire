@@ -20,12 +20,29 @@ export const orderDtoSchema = z.object({
   failedReason: z.string().nullable(), // ops-only — must not appear on /rpc
 });
 
+export type OrderDTO = z.infer<typeof orderDtoSchema>;
+
+export function toOrderDto(order: {
+  id: OrderId;
+  status: 'placed' | 'paid' | 'canceled';
+  total: number;
+  failedReason: string | null;
+}) {
+  return orderDtoSchema.parse(order);
+}
+
 // User embed: .pick the fields the app may see. That is a reference, not a dependency.
 export const userOrderDtoSchema = orderDtoSchema.pick({
   id: true,
   status: true,
   total: true,
 });
+
+export type UserOrderDTO = z.infer<typeof userOrderDtoSchema>;
+
+export function toUserOrderDto(order: { id: OrderId; status: 'placed' | 'paid' | 'canceled'; total: number }) {
+  return userOrderDtoSchema.parse(order);
+}
 
 export const payOrderInputDtoSchema = z.object({
   paymentMethodId: z.string().min(1),
@@ -40,3 +57,9 @@ export const userOrderViaOmit = orderDtoSchema.omit({ failedReason: true });
 
 // ✗ user `/rpc` importing the ops schema. failedReason is one field away from the app.
 export const userGetOrderOutput = z.object({ order: orderDtoSchema });
+
+export class OrderServiceReturnsDto {
+  async pay(_id: OrderId) {
+    return toOrderDto({ id: _id, status: 'paid', total: 0, failedReason: null }); // ✗ service returns a DTO; pin the write to today's wire
+  }
+}
