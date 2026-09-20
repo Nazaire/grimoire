@@ -22,10 +22,9 @@ score. TTL on an in-process map is the whole policy — not a second
 computer, not `cache-control` on the vendor.
 
 **How it's held up:** Only after batching is not enough. Catalog loaders
-~10m, cookie claims 5m, CMS GraphQL `memo` of the in-flight promise then
+~10m, cookie claims 5m. `memo` shares the in-flight promise, then
 `delete` on `service_failed`. The friction is the key: miss an input
-(member sex, a document version) and you serve the wrong identity until
-TTL. `undefined` is a miss — negative-cache a sentinel (`true`). Redis
+and you serve the wrong identity until TTL. `undefined` is a miss — negative-cache a sentinel (`true`). Redis
 is rare: the work has to survive the pod, the TTL is still short, the
 key is still complete. Reach for it carelessly and the weirdness is
 cross-process.

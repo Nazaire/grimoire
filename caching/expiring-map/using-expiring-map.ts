@@ -13,8 +13,7 @@ const TEN_MIN = 10 * 60_000;
 // Client. Short lifetime. gcTime sweeps idle keys; the timer is unref'd.
 export const catalogCache = new ExpiringMap<string, unknown>(TEN_MIN, { gcTime: TEN_MIN });
 
-// key + getter. CMS GraphQL is this: cache the Promise, drop it if the
-// result is a retryable failure.
+// key + getter. Cache the Promise; drop the key if the result is a retryable failure.
 type Remote =
   | { success: true; data: unknown }
   | { success: false; error: { code: 'service_failed' | 'service_unavailable' | 'invalid_request' } };
