@@ -8,6 +8,7 @@
 | [pgboss](./pgboss)               | [queues](./pgboss/queues)                                              |
 | [observability](./observability) | [logger](./observability/logger)                                       |
 | [orpc](./orpc)                   | [rpc](./orpc/rpc)                                                      |
+| [di](./di)                       | [inversify](./di/inversify)                                            |
 
 <!--
 Add a row per domain as you go, e.g.:
