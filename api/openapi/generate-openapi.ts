@@ -9,7 +9,6 @@ const surfaces = [
   { fileName: 'rpc.json', exportName: 'orpcRouter' },
   { fileName: 'rpc-admin.json', exportName: 'adminOrpcRouter' },
   { fileName: 'rpc-ops.json', exportName: 'opsOrpcRouter' },
-  { fileName: 'rpc-ops-agent.json', exportName: 'opsAgentOrpcRouter' },
 ];
 
 export async function generateOpenApi(write: (fileName: string, spec: string) => void) {
@@ -34,7 +33,7 @@ export async function shipWithoutGenerating() {
 }
 
 export async function generateOnlyUserRpc() {
-  // ✗ admin / ops / ops-agent are published too. CI diffs every file.
+  // ✗ admin / ops are published too. CI diffs every file.
 }
 
 declare class OpenAPIGenerator {

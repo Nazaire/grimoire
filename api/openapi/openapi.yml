@@ -33,7 +33,7 @@ jobs:
         id: diff
         run: |
           breaking_exit=0
-          for spec in rpc rpc-admin rpc-ops rpc-ops-agent; do
+          for spec in rpc rpc-admin rpc-ops; do
             git show "origin/${{ github.base_ref }}:packages/server/openapi/${spec}.json" > "/tmp/${spec}.json"
             if ! oasdiff breaking "/tmp/${spec}.json" "packages/server/openapi/${spec}.json" --flatten-allof --fail-on ERR; then
               breaking_exit=1
@@ -54,5 +54,5 @@ jobs:
 # ─────────────────────────────────────────────────────────────────────────────
 #
 # openapi:accept-breaking on a dropped field mixed clients still parse.
-# Checking only rpc.json — admin / ops / ops-agent are published too.
+# Checking only rpc.json — admin / ops are published too.
 # Skipping drafts — Cursor opens them; drift must fail before ready.

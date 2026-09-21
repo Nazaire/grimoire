@@ -7,8 +7,8 @@ retired:
 # OpenAPI
 
 **What it is:** The published contract, committed. Each audience tree has
-a snapshot (`rpc.json`, `rpc-admin.json`, `rpc-ops.json`,
-`rpc-ops-agent.json`) generated from the oRPC router. CI regenerates and
+a snapshot (`rpc.json`, `rpc-admin.json`, `rpc-ops.json`) generated from
+the oRPC router. CI regenerates and
 fails if git is dirty — you forgot to commit. Then **oasdiff** compares
 base → head and fails on breaking (`--fail-on ERR`) unless the PR has
 `openapi:accept-breaking`. Drafts run too.
