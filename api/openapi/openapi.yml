@@ -1,0 +1,58 @@
+# Committed snapshots vs base. Two gates: generate must match HEAD, oasdiff
+# must not report ERR. Drafts run — Cursor opens them. The label is for a
+# break you meant, not a skipped generate.
+
+name: OpenAPI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
+
+jobs:
+  diff:
+    name: openapi-spec-diff
+    runs-on: ubuntu-latest
+    if: >-
+      (github.event.action != 'labeled' && github.event.action != 'unlabeled')
+      || github.event.label.name == 'openapi:accept-breaking'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Snapshot is current
+        run: |
+          bun run openapi:generate
+          if ! git diff --quiet packages/server/openapi; then
+            echo "OpenAPI specs are out of date. Run 'bun run openapi:generate' and commit the result."
+            git --no-pager diff packages/server/openapi
+            exit 1
+          fi
+
+      - name: Snapshot is compatible
+        id: diff
+        run: |
+          breaking_exit=0
+          for spec in rpc rpc-admin rpc-ops rpc-ops-agent; do
+            git show "origin/${{ github.base_ref }}:packages/server/openapi/${spec}.json" > "/tmp/${spec}.json"
+            if ! oasdiff breaking "/tmp/${spec}.json" "packages/server/openapi/${spec}.json" --flatten-allof --fail-on ERR; then
+              breaking_exit=1
+            fi
+          done
+          echo "exit_code=$breaking_exit" >> "$GITHUB_OUTPUT"
+
+      - name: Fail on breaking changes
+        if: >-
+          steps.diff.outputs.exit_code != '0'
+          && !contains(github.event.pull_request.labels.*.name, 'openapi:accept-breaking')
+        run: |
+          echo "::error::oasdiff detected breaking OpenAPI changes. Add the 'openapi:accept-breaking' label to acknowledge."
+          exit 1
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ANTI-PATTERNS
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# openapi:accept-breaking on a dropped field mixed clients still parse.
+# Checking only rpc.json — admin / ops / ops-agent are published too.
+# Skipping drafts — Cursor opens them; drift must fail before ready.

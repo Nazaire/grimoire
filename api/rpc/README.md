@@ -50,6 +50,7 @@ edge.
 
 Never put admin or ops on user `/rpc`. Clients generate from that tree's
 OpenAPI. Schema files live with the audience — see [schemas](../schemas).
+CI fails a PR that breaks the snapshot — [openapi](../openapi).
 
 | Audience | Prefix       | Router                   | Schemas                        |
 | -------- | ------------ | ------------------------ | ------------------------------ |
