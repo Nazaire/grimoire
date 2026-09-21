@@ -90,7 +90,8 @@ switches on.
 
 Deprecate, then remove: add the replacement, keep the old, mark it in
 OpenAPI, dual-read until clients move. Do not “fix” a DTO by dropping a
-field another client still parses.
+field another client still parses. CI enforces this —
+[openapi](../openapi).
 
 ## Status log
 
