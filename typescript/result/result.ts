@@ -58,10 +58,9 @@ export function flatten<E, R extends Result>(result: Result<R, E>): Failure<E> |
 }
 
 /**
- * Maps a successful result to a new Result. The callback may narrow the success
- * or replace it with a failure. An input failure is returned unchanged.
+ * Maps a successful result to a new value
  */
-export function map<T, E, R extends Result>(result: Result<T, E>, fn: (data: T) => R): Failure<E> | R {
+export function map<T, E, R extends Result<T>>(result: Result<T, E>, fn: (data: T) => R): Failure<E> | R {
   if (result.success) {
     return fn(result.data);
   }
@@ -73,11 +72,9 @@ export function map<T, E, R extends Result>(result: Result<T, E>, fn: (data: T) 
  * is inferred from `fn` (a `Result` or `Promise<Result>`). Failed inputs short-circuit
  * without calling `fn`.
  */
-export function chain<T, E, R>(result: Result<T, E>, fn: (data: Success<T>) => R): Failure<E> | R {
-  if (result.success) {
-    return fn(result);
-  }
-  return result;
+export function chain<In extends Result, Out>(result: In, fn: (data: SuccessOf<In>) => Out): FailureOf<In> | Out {
+  if (result.success) return fn(result as unknown as SuccessOf<In>);
+  return result as unknown as FailureOf<In>;
 }
 
 /**

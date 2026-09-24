@@ -3,7 +3,7 @@
  * Domain is deliberately generic (users, orders) — the shapes are the point.
  */
 
-import { success, failure, failureCode, resultify, chain, map, unwrapOr, assertSuccess } from './result';
+import { success, failure, failureCode, resultify, chain, unwrapOr, assertSuccess } from './result';
 import { CodedError } from '../coded-error/coded-error';
 
 // A fallible operation returns a Result instead of throwing.
@@ -32,17 +32,17 @@ export async function callExternalApi() {
   return success(result.data);
 }
 
-// chain sequences a dependent step. `fn` receives the Success object and may be
-// sync or async; a failed input short-circuits without calling `fn`.
+// chain sequences a dependent step. `In extends Result` so SuccessOf / FailureOf
+// distribute over a union — fn gets the Success object; a failed input is
+// FailureOf, unchanged. fn may be sync or async.
 export async function getUserName(id: string) {
   const result = await getUser(id);
   return chain(result, ({ data: user }) => success(user.name));
 }
 
-// map's callback gets `data`, not the Success object. It returns a Result — a
-// different T, or a failure. `R extends Result` (not Result<T>) is what lets that typecheck.
+// Callback can change T or fail. Input failure codes stay in the union.
 export async function requirePrimaryOrder(id: string) {
-  return map(await getUser(id), (user) =>
+  return chain(await getUser(id), ({ data: user }) =>
     user.primaryOrderId ? success(user.primaryOrderId) : failureCode('no_primary_order'),
   );
 }
