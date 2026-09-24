@@ -58,9 +58,10 @@ export function flatten<E, R extends Result>(result: Result<R, E>): Failure<E> |
 }
 
 /**
- * Maps a successful result to a new value
+ * Maps a successful result to a new Result. The callback may narrow the success
+ * or replace it with a failure. An input failure is returned unchanged.
  */
-export function map<T, E, R extends Result<T>>(result: Result<T, E>, fn: (data: T) => R): Failure<E> | R {
+export function map<T, E, R extends Result>(result: Result<T, E>, fn: (data: T) => R): Failure<E> | R {
   if (result.success) {
     return fn(result.data);
   }

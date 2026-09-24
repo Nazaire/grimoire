@@ -3,7 +3,7 @@
  * Domain is deliberately generic (users, orders) — the shapes are the point.
  */
 
-import { success, failure, failureCode, resultify, chain, unwrapOr, assertSuccess } from './result';
+import { success, failure, failureCode, resultify, chain, map, unwrapOr, assertSuccess } from './result';
 import { CodedError } from '../coded-error/coded-error';
 
 // A fallible operation returns a Result instead of throwing.
@@ -37,6 +37,14 @@ export async function callExternalApi() {
 export async function getUserName(id: string) {
   const result = await getUser(id);
   return chain(result, ({ data: user }) => success(user.name));
+}
+
+// map's callback gets `data`, not the Success object. It returns a Result — a
+// different T, or a failure. `R extends Result` (not Result<T>) is what lets that typecheck.
+export async function requirePrimaryOrder(id: string) {
+  return map(await getUser(id), (user) =>
+    user.primaryOrderId ? success(user.primaryOrderId) : failureCode('no_primary_order'),
+  );
 }
 
 export async function getUpperName(id: string) {

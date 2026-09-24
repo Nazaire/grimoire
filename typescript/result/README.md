@@ -37,7 +37,8 @@ else result.error.code;            // 'not_found'
 - [`result.ts`](./result.ts) — the type, constructors, `resultify` / `tryCatch`,
   combinators (`chain`, `map`, `flatten`), and the narrowing asserts.
 - [`using-result.ts`](./using-result.ts) — producing, wrapping a promise,
-  remapping with `{ cause }`, chaining, and narrowing at a boundary.
+  remapping with `{ cause }`, chaining, mapping success into another Result,
+  and narrowing at a boundary.
 
 ## Gotchas
 
@@ -54,6 +55,8 @@ lives in [logger](../../observability/logger).
 
 ## Status log
 
+- 2026-09 ✅ Active — `map`'s callback returns any `Result`, not `Result<T>`.
+  It can change `T` or fail; an input failure is unchanged.
 - 2026-09 ✅ Active — `failureFromCause` folded into `failureCode(code, { cause, extra })`.
   Remap message defaults to the new code, not `cause.message`. `Success` / `Failure`
   are now the result object types (`SuccessOf` / `FailureOf` extract them).
