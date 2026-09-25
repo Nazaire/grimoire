@@ -16,20 +16,68 @@ reminds them. `Result` puts failure back in the return type: the set of things
 that can go wrong is inferred, and you can't get at the value without acknowledging
 the error.
 
-**How it's held up:** Holds up on one condition — you let types infer. Annotate a
-return type and the error union widens to `CodedError<string>`; `switch` stops
-narrowing and the benefit is gone.
+The other half is how the function *reads*. Failure is a value, so you return
+it and the rest of the body is only the success case:
 
 ```ts
-async function getUser(id: string) {
-  const row = await db.users.find(id);
-  if (!row) return failureCode('not_found'); // Failure<CodedError<'not_found'>>
-  return success(row);                        // inferred — don't annotate
+const paid = await orders.pay(orderId, methodId);
+if (!paid.success) return paid;
+
+const shipped = await fulfillments.ship(paid.data.id);
+if (!shipped.success) return shipped;
+
+return success(shipped.data);
+```
+
+That is a **straight-line happy path** (guard clauses / early return). The
+success logic is a vertical line you can scan; each failure is a one-line
+`if (!….success) return`. Nesting the same branches (arrow code) is the same
+number of decisions — **cyclomatic complexity** does not drop — but
+**cognitive complexity** does: you are not holding a stack of `else`s. The
+failures sit on the left, in source order, instead of buried at the bottom
+of a pyramid.
+
+`return result` is the default — pass-through, the caller's problem. This
+layer still owns some codes. **Throw** a bug so it never appears on your
+`Result`. **Remap** a vendor code into vocabulary this API owns. **Retry**
+a conflict. **Recover** an idempotent already-done as success. The happy
+path stays a line; the switch *is* the failure line. The three exits live
+in [coded-error](../coded-error).
+
+```ts
+if (!paid.success) {
+  switch (paid.error.code) {
+    case 'conflict':
+      if (attempts <= 1) return paid;
+      return charge(orderId, methodId, attempts - 1); // retry — this layer absorbs it
+    case 'payment_provider_rejected':
+      return failureCode('card_declined', { cause: paid.error }); // remap
+    case 'invalid_request':
+      throw paid.error; // we built a bad charge — not the caller's Result
+    case 'card_declined':
+      return paid; // caller picks another method
+    default:
+      return assertNever(paid.error.code);
+  }
+}
+```
+
+**How it's held up:** Holds up on one condition — you let types infer. Annotate a
+return type and the error union widens to `CodedError<string>`; `switch` stops
+narrowing and the benefit is gone. The straight-line shape is the other
+condition: `return result` is pass-through ([coded-error](../coded-error));
+don't indent the rest of the function under `if (result.success)`.
+
+```ts
+async function pay(order: { id: string; paidAt?: Date }, methodId: string) {
+  if (!methodId) return failureCode('payment_method_required');
+  if (order.paidAt) return failureCode('order_already_paid');
+  return success(order); // inferred — don't annotate
 }
 
-const result = await getUser(id);
-if (result.success) result.data;   // narrowed to the row
-else result.error.code;            // 'not_found'
+const result = await pay(order, methodId);
+if (result.success) result.data;   // narrowed to the order
+else result.error.code;            // 'payment_method_required' | 'order_already_paid'
 ```
 
 ## Artifacts
@@ -37,7 +85,8 @@ else result.error.code;            // 'not_found'
 - [`result.ts`](./result.ts) — the type, constructors, `resultify` / `tryCatch`,
   combinators (`chain`, `map`, `flatten`), and the narrowing asserts.
 - [`using-result.ts`](./using-result.ts) — producing, wrapping a promise,
-  remapping with `{ cause }`, chaining, and narrowing at a boundary.
+  remapping with `{ cause }`, the straight-line `if (!….success) return`,
+  throw / remap / retry / recover, chaining, and narrowing at a boundary.
 
 ## Gotchas
 

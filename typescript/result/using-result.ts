@@ -3,7 +3,7 @@
  * Domain is deliberately generic (users, orders) — the shapes are the point.
  */
 
-import { success, failure, failureCode, resultify, chain, unwrapOr, assertSuccess } from './result';
+import { success, failure, failureCode, resultify, chain, unwrapOr, assertSuccess, assertNever } from './result';
 import { CodedError } from '../coded-error/coded-error';
 
 // A fallible operation returns a Result instead of throwing.
@@ -32,11 +32,71 @@ export async function callExternalApi() {
   return success(result.data);
 }
 
-// chain sequences a dependent step. `fn` receives the Success object and may be
-// sync or async; a failed input short-circuits without calling `fn`.
+// Straight-line happy path. Each failure is a one-line return; the next line
+// is only the success case. Same number of branches as nested ifs — less nesting.
+export async function payThenShip(orderId: string, methodId: string) {
+  const paid = await orders.pay(orderId, methodId);
+  if (!paid.success) return paid;
+
+  const shipped = await fulfillments.ship(paid.data.id);
+  if (!shipped.success) return shipped;
+
+  return success(shipped.data);
+}
+
+// Default is pass-through. Switch when this layer owns the code: throw a bug,
+// remap vendor vocabulary, retry conflict, recover already-done as success.
+export async function checkout(orderId: string, methodId: string) {
+  const paid = await charge(orderId, methodId);
+  if (!paid.success) return paid;
+
+  const shipped = await fulfillments.ship(paid.data.id);
+  if (!shipped.success) {
+    switch (shipped.error.code) {
+      case 'already_shipped':
+        return success(paid.data); // recovered — a retry of a success
+      case 'order_not_found':
+        return shipped; // caller's problem
+      default:
+        return assertNever(shipped.error.code);
+    }
+  }
+
+  return success(shipped.data);
+}
+
+async function charge(orderId: string, methodId: string, attempts = 3) {
+  const paid = await payments.charge(orderId, methodId);
+  if (paid.success) return paid;
+
+  switch (paid.error.code) {
+    case 'conflict':
+      if (attempts <= 1) return paid;
+      return charge(orderId, methodId, attempts - 1); // this layer retries; caller never sees the race
+    case 'payment_provider_rejected':
+      return failureCode('card_declined', { cause: paid.error }); // remap — caller switches on our code
+    case 'invalid_request':
+      throw paid.error; // we built a bad charge — must not appear on this Result
+    case 'card_declined':
+      return paid; // caller picks another method
+    default:
+      return assertNever(paid.error.code);
+  }
+}
+
+// chain sequences a dependent step. `In extends Result` so SuccessOf / FailureOf
+// distribute over a union — fn gets the Success object; a failed input is
+// FailureOf, unchanged. fn may be sync or async.
 export async function getUserName(id: string) {
   const result = await getUser(id);
   return chain(result, ({ data: user }) => success(user.name));
+}
+
+// Callback can change T or fail. Input failure codes stay in the union.
+export async function requirePrimaryOrder(id: string) {
+  return chain(await getUser(id), ({ data: user }) =>
+    user.primaryOrderId ? success(user.primaryOrderId) : failureCode('no_primary_order'),
+  );
 }
 
 export async function getUpperName(id: string) {
@@ -84,3 +144,31 @@ declare const db: {
 };
 declare function doWork(input: string): Promise<{ rows: number }>;
 declare const logger: { error(msg: string, fields?: { error: unknown }): void };
+declare const orders: {
+  pay(
+    orderId: string,
+    methodId: string,
+  ): Promise<
+    { success: true; data: { id: string } } | { success: false; error: CodedError<'order_not_found' | 'card_declined'> }
+  >;
+};
+declare const fulfillments: {
+  ship(
+    orderId: string,
+  ): Promise<
+    | { success: true; data: { id: string } }
+    | { success: false; error: CodedError<'order_not_found' | 'already_shipped'> }
+  >;
+};
+declare const payments: {
+  charge(
+    orderId: string,
+    methodId: string,
+  ): Promise<
+    | { success: true; data: { id: string } }
+    | {
+        success: false;
+        error: CodedError<'conflict' | 'card_declined' | 'payment_provider_rejected' | 'invalid_request'>;
+      }
+  >;
+};

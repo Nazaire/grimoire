@@ -72,11 +72,9 @@ export function map<T, E, R extends Result<T>>(result: Result<T, E>, fn: (data: 
  * is inferred from `fn` (a `Result` or `Promise<Result>`). Failed inputs short-circuit
  * without calling `fn`.
  */
-export function chain<T, E, R>(result: Result<T, E>, fn: (data: Success<T>) => R): Failure<E> | R {
-  if (result.success) {
-    return fn(result);
-  }
-  return result;
+export function chain<In extends Result, Out>(result: In, fn: (data: SuccessOf<In>) => Out): FailureOf<In> | Out {
+  if (result.success) return fn(result as unknown as SuccessOf<In>);
+  return result as unknown as FailureOf<In>;
 }
 
 /**
