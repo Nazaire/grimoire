@@ -54,8 +54,6 @@ lives in [logger](../../observability/logger).
 
 ## Status log
 
-- 2026-09 ✅ Active — `chain` is `In extends Result`: `SuccessOf` / `FailureOf`
-  distribute over a union so input failure codes don't collapse.
 - 2026-09 ✅ Active — `failureFromCause` folded into `failureCode(code, { cause, extra })`.
   Remap message defaults to the new code, not `cause.message`. `Success` / `Failure`
   are now the result object types (`SuccessOf` / `FailureOf` extract them).
