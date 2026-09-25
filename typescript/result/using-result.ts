@@ -34,16 +34,14 @@ export async function callExternalApi() {
 
 // Straight-line happy path. Each failure is a one-line return; the next line
 // is only the success case. Same number of branches as nested ifs — less nesting.
-export async function getPrimaryOrder(id: string) {
-  const user = await getUser(id);
-  if (!user.success) return user;
+export async function payThenShip(orderId: string, methodId: string) {
+  const paid = await orders.pay(orderId, methodId);
+  if (!paid.success) return paid;
 
-  if (!user.data.primaryOrderId) return failureCode('no_primary_order');
+  const shipped = await fulfillments.ship(paid.data.id);
+  if (!shipped.success) return shipped;
 
-  const order = await getOrder(user.data.primaryOrderId);
-  if (!order.success) return order;
-
-  return success(order.data);
+  return success(shipped.data);
 }
 
 // chain sequences a dependent step. `In extends Result` so SuccessOf / FailureOf
@@ -104,8 +102,21 @@ export async function importData(input: string) {
 declare const db: {
   users: { findById(id: string): Promise<{ name: string; primaryOrderId?: string } | null> };
 };
-declare function getOrder(
-  id: string,
-): Promise<{ success: true; data: { id: string } } | { success: false; error: CodedError<'order_not_found'> }>;
 declare function doWork(input: string): Promise<{ rows: number }>;
 declare const logger: { error(msg: string, fields?: { error: unknown }): void };
+declare const orders: {
+  pay(
+    orderId: string,
+    methodId: string,
+  ): Promise<
+    { success: true; data: { id: string } } | { success: false; error: CodedError<'order_not_found' | 'card_declined'> }
+  >;
+};
+declare const fulfillments: {
+  ship(
+    orderId: string,
+  ): Promise<
+    | { success: true; data: { id: string } }
+    | { success: false; error: CodedError<'order_not_found' | 'already_shipped'> }
+  >;
+};

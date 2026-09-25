@@ -20,13 +20,13 @@ The other half is how the function *reads*. Failure is a value, so you return
 it and the rest of the body is only the success case:
 
 ```ts
-const user = await getUser(id);
-if (!user.success) return user;
+const paid = await orders.pay(orderId, methodId);
+if (!paid.success) return paid;
 
-const order = await getOrder(user.data.primaryOrderId);
-if (!order.success) return order;
+const shipped = await fulfillments.ship(paid.data.id);
+if (!shipped.success) return shipped;
 
-return success(order.data);
+return success(shipped.data);
 ```
 
 That is a **straight-line happy path** (guard clauses / early return). The
@@ -44,15 +44,15 @@ condition: `return result` is pass-through ([coded-error](../coded-error));
 don't indent the rest of the function under `if (result.success)`.
 
 ```ts
-async function getUser(id: string) {
-  const row = await db.users.find(id);
-  if (!row) return failureCode('not_found'); // Failure<CodedError<'not_found'>>
-  return success(row);                        // inferred — don't annotate
+async function pay(order: { id: string; paidAt?: Date }, methodId: string) {
+  if (!methodId) return failureCode('payment_method_required');
+  if (order.paidAt) return failureCode('order_already_paid');
+  return success(order); // inferred — don't annotate
 }
 
-const result = await getUser(id);
-if (result.success) result.data;   // narrowed to the row
-else result.error.code;            // 'not_found'
+const result = await pay(order, methodId);
+if (result.success) result.data;   // narrowed to the order
+else result.error.code;            // 'payment_method_required' | 'order_already_paid'
 ```
 
 ## Artifacts
