@@ -32,6 +32,20 @@ export async function callExternalApi() {
   return success(result.data);
 }
 
+// Straight-line happy path. Each failure is a one-line return; the next line
+// is only the success case. Same number of branches as nested ifs — less nesting.
+export async function getPrimaryOrder(id: string) {
+  const user = await getUser(id);
+  if (!user.success) return user;
+
+  if (!user.data.primaryOrderId) return failureCode('no_primary_order');
+
+  const order = await getOrder(user.data.primaryOrderId);
+  if (!order.success) return order;
+
+  return success(order.data);
+}
+
 // chain sequences a dependent step. `In extends Result` so SuccessOf / FailureOf
 // distribute over a union — fn gets the Success object; a failed input is
 // FailureOf, unchanged. fn may be sync or async.
@@ -90,5 +104,8 @@ export async function importData(input: string) {
 declare const db: {
   users: { findById(id: string): Promise<{ name: string; primaryOrderId?: string } | null> };
 };
+declare function getOrder(
+  id: string,
+): Promise<{ success: true; data: { id: string } } | { success: false; error: CodedError<'order_not_found'> }>;
 declare function doWork(input: string): Promise<{ rows: number }>;
 declare const logger: { error(msg: string, fields?: { error: unknown }): void };
