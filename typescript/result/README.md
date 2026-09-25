@@ -37,6 +37,31 @@ number of decisions — **cyclomatic complexity** does not drop — but
 failures sit on the left, in source order, instead of buried at the bottom
 of a pyramid.
 
+`return result` is the default — pass-through, the caller's problem. This
+layer still owns some codes. **Throw** a bug so it never appears on your
+`Result`. **Remap** a vendor code into vocabulary this API owns. **Retry**
+a conflict. **Recover** an idempotent already-done as success. The happy
+path stays a line; the switch *is* the failure line. The three exits live
+in [coded-error](../coded-error).
+
+```ts
+if (!paid.success) {
+  switch (paid.error.code) {
+    case 'conflict':
+      if (attempts <= 1) return paid;
+      return charge(orderId, methodId, attempts - 1); // retry — this layer absorbs it
+    case 'payment_provider_rejected':
+      return failureCode('card_declined', { cause: paid.error }); // remap
+    case 'invalid_request':
+      throw paid.error; // we built a bad charge — not the caller's Result
+    case 'card_declined':
+      return paid; // caller picks another method
+    default:
+      return assertNever(paid.error.code);
+  }
+}
+```
+
 **How it's held up:** Holds up on one condition — you let types infer. Annotate a
 return type and the error union widens to `CodedError<string>`; `switch` stops
 narrowing and the benefit is gone. The straight-line shape is the other
@@ -61,7 +86,7 @@ else result.error.code;            // 'payment_method_required' | 'order_already
   combinators (`chain`, `map`, `flatten`), and the narrowing asserts.
 - [`using-result.ts`](./using-result.ts) — producing, wrapping a promise,
   remapping with `{ cause }`, the straight-line `if (!….success) return`,
-  chaining, and narrowing at a boundary.
+  throw / remap / retry / recover, chaining, and narrowing at a boundary.
 
 ## Gotchas
 
